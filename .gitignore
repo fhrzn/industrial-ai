@@ -1,1 +1,6 @@
 *.pptx
+*.csv
+*.docx
+*.jpg
+/datasets/
+__pycache__
