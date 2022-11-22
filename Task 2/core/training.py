@@ -107,9 +107,8 @@ def train(model, model_name, trainloader, valloader=None,
         history['val_loss'].append(val_loss / len(valloader))
         history['val_acc'].append(val_acc / len(trainloader))
 
-        # print log
-        if config['log_strategy'] == 'epoch':
-            print_log(e, history, progress_bar, config['log_every'])
+        # print log        
+        print_log(e, history, progress_bar, config['log_every'])
 
         # save model if val loss decrease
         if val_loss / len(valloader) <= val_loss_min:
@@ -129,7 +128,7 @@ def train(model, model_name, trainloader, valloader=None,
 
     return model, history
     
-    
+
 def test(model, testloader, device=torch.device('cpu')):
     
     metric = evaluate.load('accuracy')
