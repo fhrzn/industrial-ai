@@ -2,9 +2,10 @@ from torch.utils.data import Dataset
 from torchvision.io import read_image
 from torchvision import transforms
 import numpy as np
+from PIL import Image
 
 class IMDBDataset(Dataset):
-    def __init__(self, data, tokenizer, tokenizer_out_dim=64, type='title'):
+    def __init__(self, data, tokenizer=None, tokenizer_out_dim=64, type='title'):
         super().__init__()
 
         self.data = data
@@ -18,6 +19,9 @@ class IMDBDataset(Dataset):
         self.label2id = {v: k for k, v in enumerate(labels)}
 
     def __getitem__(self, index):
+
+        if self.tokenizer is None:
+            raise SystemError('Tokenizer cannot be None. Please set tokenizer by calling set_tokenizer(tokenizer) function.')
         
         labels = self.label2id[self.data[index]['genre']]
 
@@ -42,24 +46,25 @@ class IMDBDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
+    def set_tokenizer(self, tokenizer):
+        self.tokenizer = tokenizer
+
     def load_img(self, url, title=None):
         try:
-            feature = read_image(url)            
-        except:
-            # getting base url
-            # base_url = url.replace(title, '')
+            # feature = read_image(url)
+            pil_img = Image.open(url).convert('RGB')
+        except:            
             # make url adjustment
             template = '\/:*?&”;%<>\'|'            
-            ntitle = title.translate(str.maketrans(template, '_' * len(template), ''))
-            feature = read_image(url.replace(title, ntitle))
+            ntitle = title.translate(str.maketrans(template, '_' * len(template), ''))            
+            pil_img = Image.open(url.replace(title, ntitle)).convert('RGB')
+
         
-        # fix channel size
-        if feature.size(0) < 3:
-            feature = feature.repeat(3, 1, 1)
+        pil_feature = self.tokenizer(pil_img)['pixel_values'][0]
                     
         return {
-                'feature': feature,
-                'image': np.array(transforms.ToPILImage()(feature))
+                'pixel_values': pil_feature,
+                'image': np.array(pil_img)
             }
 
     def tokenize(self, item):
