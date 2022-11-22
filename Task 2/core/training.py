@@ -65,7 +65,7 @@ def train(model, model_name, trainloader, valloader=None,
             
             # loss
             loss = outputs.loss
-            train_loss += (loss)
+            train_loss += loss
             loss.backward()
 
             # acc
@@ -101,7 +101,7 @@ def train(model, model_name, trainloader, valloader=None,
 
             # acc
             preds = torch.argmax(outputs.logits, dim=-1)
-            val_acc += metric.compute(predictions=preds, references=batch.labels)
+            val_acc += metric.compute(predictions=preds, references=batch.labels)['accuracy']
             
         # log history
         history['val_loss'].append(val_loss / len(valloader))
@@ -129,8 +129,30 @@ def train(model, model_name, trainloader, valloader=None,
 
     return model, history
     
+    
 def test(model, testloader, device=torch.device('cpu')):
-    pass
+    
+    metric = evaluate.load('accuracy')
+    
+    # eval mode
+    model.eval()
+
+    test_loss = 0
+    test_acc = 0
+
+    for batch in testloader:
+        with torch.no_grad():
+            outputs = model(**batch.to(device))
+
+        # loss
+        loss = outputs.loss
+        test_loss += loss
+
+        # acc
+        preds = torch.argmax(outputs.logits, dim=-1)
+        test_acc += metric.compute(predictions=preds, references=batch.labels)['accuracy']
+
+    return test_loss / len(testloader), test_acc / len(testloader)
 
 
 
