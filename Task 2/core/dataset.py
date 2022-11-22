@@ -1,6 +1,4 @@
 from torch.utils.data import Dataset
-from torchvision.io import read_image
-from torchvision import transforms
 import numpy as np
 from PIL import Image
 
