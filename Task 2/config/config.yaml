@@ -1,4 +1,5 @@
-dataset_path: ./datasets/ml-industry/task2/processed.csv
+# dataset_path: ./datasets/ml-industry/task2/processed.csv
+dataset_path: ./datasets/ml-industry/task2/processed-multilabel.csv
 text_model_ckpt: bert-base-uncased
 image_model_ckpt: google/vit-base-patch16-224-in21k
 image_model_ckpt_2: microsoft/resnet-152

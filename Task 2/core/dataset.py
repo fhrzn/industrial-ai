@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 import numpy as np
 from PIL import Image
+import torch
 
 class IMDBDataset(Dataset):
     def __init__(self, data, tokenizer=None, tokenizer_out_dim=64, type='title'):
@@ -12,7 +13,8 @@ class IMDBDataset(Dataset):
         self.type = type
 
         # encode labels
-        labels = sorted(set([t['genre'] for t in data]))
+        # labels = sorted(set([t['genre'] for t in data]))
+        labels = sorted(list(data[0].keys())[4:])
         self.id2label = {k: v for k, v in enumerate(labels)}
         self.label2id = {v: k for k, v in enumerate(labels)}
 
@@ -21,7 +23,8 @@ class IMDBDataset(Dataset):
         if self.tokenizer is None:
             raise SystemError('Tokenizer cannot be None. Please set tokenizer by calling set_tokenizer(tokenizer) function.')
         
-        labels = self.label2id[self.data[index]['genre']]
+        # labels = self.label2id[self.data[index]['genre']]
+        labels = torch.Tensor(list(self.data[index].values())[4:])
 
         # tokenize and load image as array
         # assign every variable with corresponding label
