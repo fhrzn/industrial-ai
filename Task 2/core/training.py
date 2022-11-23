@@ -4,6 +4,7 @@ from transformers import get_scheduler
 import torch
 import os
 import evaluate
+from metrics import compute_metrics
 
 def train(model, model_name, trainloader, valloader=None, 
             config=None, device=torch.device('cpu'),
@@ -35,12 +36,16 @@ def train(model, model_name, trainloader, valloader=None,
     history = {
         'train_loss': [],
         'train_acc': [],
+        'train_f1': [],
+        'train_roc_auc': [],
         'val_loss': [],
         'val_acc': [],
+        'val_f1': [],
+        'val_roc_auc': [],
         'epochs': n_epoch
     }
-    # metric
-    metric = evaluate.load('accuracy')
+    # # metric
+    # metric = evaluate.load('accuracy')
     # tqdm
     progress_bar = tqdm(range(num_train_steps))
     # output path
@@ -59,6 +64,8 @@ def train(model, model_name, trainloader, valloader=None,
 
         train_loss = 0
         train_acc = 0
+        train_f1 = 0
+        train_roc_auc = 0
 
         for batch in trainloader:
             outputs = model(**batch.to(device))
@@ -69,8 +76,12 @@ def train(model, model_name, trainloader, valloader=None,
             loss.backward()
 
             # acc
-            preds = torch.argmax(outputs.logits, dim=-1)            
-            train_acc += metric.compute(predictions=preds, references=batch.labels)['accuracy']
+            # preds = torch.argmax(outputs.logits, dim=-1)            
+            # train_acc += metric.compute(predictions=preds, references=batch.labels)['accuracy']
+            metrics = compute_metrics(outputs.logits, batch.labels)
+            train_acc += metrics['accuracy']
+            train_f1 += metrics['f1']
+            train_roc_auc += metrics['roc_auc']
 
             # step
             optimizer.step()
@@ -81,6 +92,8 @@ def train(model, model_name, trainloader, valloader=None,
         # log history
         history['train_loss'].append(train_loss / len(trainloader))
         history['train_acc'].append(train_acc / len(trainloader))
+        history['train_f1'].append(train_f1 / len(trainloader))
+        history['train_roc_auc'].append(train_roc_auc / len(trainloader))
 
         if valloader is None:
             continue
@@ -90,6 +103,8 @@ def train(model, model_name, trainloader, valloader=None,
 
         val_loss = 0
         val_acc = 0
+        val_f1 = 0
+        val_roc_auc = 0
 
         for batch in valloader:
             with torch.no_grad():
@@ -100,12 +115,18 @@ def train(model, model_name, trainloader, valloader=None,
             val_loss += loss
 
             # acc
-            preds = torch.argmax(outputs.logits, dim=-1)
-            val_acc += metric.compute(predictions=preds, references=batch.labels)['accuracy']
+            # preds = torch.argmax(outputs.logits, dim=-1)
+            # val_acc += metric.compute(predictions=preds, references=batch.labels)['accuracy']
+            metrics = compute_metrics(outputs.logits, batch.labels)
+            val_acc += metrics['accuracy']
+            val_f1 += metrics['f1']
+            val_roc_auc += metrics['roc_auc']
             
         # log history
         history['val_loss'].append(val_loss / len(valloader))
         history['val_acc'].append(val_acc / len(trainloader))
+        history['val_f1'].append(val_f1 / len(trainloader))
+        history['val_roc_auc'].append(val_roc_auc / len(trainloader))
 
         # print log        
         print_log(e, history, progress_bar, config['log_every'])
@@ -131,13 +152,15 @@ def train(model, model_name, trainloader, valloader=None,
 
 def test(model, testloader, device=torch.device('cpu')):
     
-    metric = evaluate.load('accuracy')
+    # metric = evaluate.load('accuracy')
     
     # eval mode
     model.eval()
 
     test_loss = 0
     test_acc = 0
+    test_f1 = 0
+    test_roc_auc = 0
 
     for batch in testloader:
         with torch.no_grad():
@@ -148,10 +171,20 @@ def test(model, testloader, device=torch.device('cpu')):
         test_loss += loss
 
         # acc
-        preds = torch.argmax(outputs.logits, dim=-1)
-        test_acc += metric.compute(predictions=preds, references=batch.labels)['accuracy']
+        # preds = torch.argmax(outputs.logits, dim=-1)
+        # test_acc += metric.compute(predictions=preds, references=batch.labels)['accuracy']
+        metrics = compute_metrics(outputs.logits, batch.labels)
+        test_acc += metrics['accuracy']
+        test_f1 += metrics['f1']
+        test_roc_auc += metrics['roc_auc']
 
-    return test_loss / len(testloader), test_acc / len(testloader)
+    # return test_loss / len(testloader), test_acc / len(testloader), test_f1 / len(testloader)
+    return {
+        'loss': test_loss / len(testloader),
+        'accuracy': test_acc / len(testloader),
+        'f1': test_f1 / len(testloader),
+        'roc_auc': test_roc_auc / len(testloader)
+    }
 
 
 
